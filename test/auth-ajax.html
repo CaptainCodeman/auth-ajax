@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>auth-ajax test</title>
+
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../auth-ajax.html">
+  </head>
+  <body>
+    <test-fixture id="basic">
+      <template>
+        <auth-ajax url="/some-endpoint"></auth-ajax>
+      </template>
+    </test-fixture>
+
+    <script>
+      suite('auth-ajax', function() {
+        var ajax;
+        var request;
+        var server;
+        var responseHeaders = {
+          json: { 'Content-Encoding': 'application/json' }
+        };
+
+        setup(function() {
+          server = sinon.fakeServer.create();
+          server.respondWith(
+            'GET',
+            /\/some-endpoint/, [
+              200,
+              responseHeaders.json,
+              '{ "success" : true }'
+            ]
+          )
+        });
+
+        teardown(function() {
+          server.restore();
+        });
+
+        suite('when making a request the auth function is called', function() {
+          setup(function() {
+            ajax = fixture('basic');
+            ajax.authToken = function() {
+              return Promise.resolve('my-token');
+            }
+          });
+
+          test('has sane defaults', function() {
+            request = ajax.generateRequest();
+            flush(function() {
+              expect(server.requests[0].requestHeaders['authorization']).to.be.equal('Bearer my-token');
+              server.respond();
+              expect(request.response).to.be.ok;
+              expect(request.response).to.be.an('object');
+              expect(request.response.success).to.be.equal(true);
+            });
+          });
+        });
+
+        test('instantiating the element works', function() {
+          var element = fixture('basic');
+          assert.equal(element.is, 'auth-ajax');
+        });
+      });
+    </script>
+  </body>
+</html>

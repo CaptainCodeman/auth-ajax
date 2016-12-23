@@ -1,0 +1,156 @@
+<link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../polymerfire/polymerfire.html">
+<link rel="import" href="../auth-ajax.html">
+<link rel="import" href="../auth-role.html">
+
+<dom-module id="firebase-demo">
+  <template>
+    <style>
+      img {
+        max-width: 66px;
+      }
+      pre {
+        word-wrap: break-word;
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+      }
+    </style>
+    <firebase-app
+        name="captain-codeman"
+        api-key="AIzaSyCtTk3qWIdj_kaDTehz0XWYi_C_I0AGchc"
+        auth-domain="captain-codeman.firebaseapp.com"
+        database-url="https://captain-codeman.firebaseio.com"
+        storage-bucket="captain-codeman.appspot.com"
+        messaging-sender-id="405985029296">
+    </firebase-app>
+
+    <firebase-auth
+        id="auth"
+        app-name="captain-codeman"
+        provider="google"
+        user="{{user}}"
+        signed-in="{{authenticated}}">
+    </firebase-auth>
+
+    <auth-store
+      id="store"
+      token="[[token]]"
+      data="{{jwt}}"
+      expiry="{{expiry}}"
+      offset="300">
+    </auth-store>
+
+    <button on-tap="signin">Signin</button>
+    <button on-tap="signout">Signout</button>
+
+    <template is="dom-if" if="[[jwt]]">
+      <h2>[[jwt.name]]</h2>
+      <p><img src$="[[jwt.picture]]"></p>
+
+      <h3>Firebase User</h3>
+      <pre>[[_json(user)]]</pre>
+
+      <h3>Decoded Token</h3>
+      <pre>[[_json(jwt)]]</pre>
+
+      <h3>Authorization Token</h3>
+      <pre>[[token]]</pre>
+
+      <h3>Expiry</h3>
+      <p>[[expiry]]</p>
+
+      <h3>Data</h3>
+      <pre>[[_json(jwt)]]</pre>
+
+      <auth-ajax
+        auth-required
+        auto="[[user]]"
+        url="https://auth-dot-captain-codeman.appspot.com/api"
+        last-response="{{data}}">
+      </auth-ajax>
+    </template>
+
+    <ul>
+      <template is="auth-role" restamp anonymous><li>Anonymous</li></template>
+      <template is="auth-role" restamp authenticated><li>Authenticated</li></template>
+      <template is="auth-role" restamp role="admin"><li>Admin</li></template>
+      <template is="auth-role" any='["admin", "operator", "Member"]'><li>Admin or Operator or Member</li></template>
+      <template is="auth-role" all='["admin", "operator", "Member"]'><li>Admin and Operator and Member</li></template>
+    </ul>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'firebase-demo',
+
+      properties: {
+        user: {
+          type: Object,
+          observer: '_userChanged'
+        },
+        token: {
+          type: String,
+        },
+        expiry: {
+          type: Date
+        }
+      },
+
+      ready: function() {
+        this._exchangeTokenBound = this._exchangeToken.bind(this);
+        this._signinCustomBound = this._signinCustom.bind(this);
+        this.$.store.setTokenRefresh(this._refreshToken.bind(this));
+      },
+
+      signin: function() {
+        this.$.auth.signInWithPopup();
+      },
+
+      signout: function() {
+        this.$.auth.signOut();
+      },
+
+      _refreshToken: function() {
+        console.log('refreshToken calling getToken');
+        return this.user.getToken(true);
+      },
+
+      _userChanged: function(newVal, oldVal) {
+        console.log('user changed', newVal, this.$.auth.statusKnown);
+        if (this.user === null) {
+          this.token = null;
+        } else {
+          this.user.getToken(false).then(this._exchangeTokenBound);
+        }
+      },
+
+      _exchangeToken: function(token) {
+        console.log('exchange token');
+        var data = jwt_decode(token);
+
+        if (data.firebase.sign_in_provider == 'custom') {
+          this.token = token;
+        } else {
+          fetch('https://auth-dot-captain-codeman.appspot.com/token', {
+            method: 'GET',
+            headers: { Authorization: 'Bearer ' + token },
+            mode: 'cors',
+            cache: 'default'
+          })
+          .then(function(response) { return response.text(); })
+          .then(this._signinCustomBound);
+        }
+      },
+
+      _signinCustom: function(token) {
+        this.$.auth.signOut().then(function() {
+          this.$.auth.signInWithCustomToken(token);
+        }.bind(this));
+      },
+
+      _json: function(val) {
+        return JSON.stringify(val, null, '  ');
+      },
+    });
+  </script>
+</dom-module>

@@ -1,0 +1,80 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+<link rel="import" href="../iron-ajax/iron-request.html">
+<link rel="import" href="../misbehave/misbehave.html">
+
+<link rel="import" href="auth-store.html">
+
+<!--
+The `auth-ajax` element exposes network request functionality using the same API as
+iron-ajax but adds access token and token refresh handling through interaction with
+the `auth-store` (via `Polymer.AuthTokenStoreBehavior`).
+-->
+
+<script>
+  (function() {
+    'use strict';
+
+    /**
+     * convert iron-ajax into a behavior so we don't have to re-implement everything
+     *
+     * @polymerBehavior
+     */
+    var ironAjax = document.createElement('iron-ajax').toBehavior();
+
+    // monkey patch the iron-request send method so we can hook into it
+    var ironRequest = Polymer.Base.getNativePrototype('iron-request');
+    var sendOriginal = ironRequest.send;
+    ironRequest.send = function(requestOptions) {
+      if (requestOptions.authHandler) {
+        // if it's an auth-ajax request, we handle it
+        requestOptions.authHandler(this, requestOptions);
+      } else {
+        // otherwise just handle as normal
+        sendOriginal.call(this, requestOptions);
+      }
+    }
+
+    Polymer({
+      is: 'auth-ajax',
+
+      behaviors: [
+        ironAjax,
+        Polymer.AuthTokenStoreBehavior
+      ],
+
+      properties: {
+        /** Whether an auth token is required to even attempt the request */
+        authRequired: Boolean,
+      },
+
+      attached: function() {
+        this._authHandlerBound = this.authHandler.bind(this);
+      },
+
+      // override the iron-ajax method to create options
+      // and add our authHandler function call to them
+      toRequestOptions: function() {
+        var requestOptions = ironAjax.toRequestOptions.call(this);
+        requestOptions.authHandler = this._authHandlerBound;
+        return requestOptions;
+      },
+
+      // this is the hook that allows us to wait on our auth
+      // token promise (which may be a token refresh request)
+      // before we actually send our API call off
+      authHandler: function(request, requestOptions) {
+        this.getAuthToken().then(function(accessToken) {
+          requestOptions.headers.Authorization = 'Bearer ' + accessToken;
+          sendOriginal.call(request, requestOptions);
+        }.bind(this), function(reason) {
+          if (this.authRequired) {
+            handleError(request, new Error(reason));
+          } else {
+            sendOriginal.call(request, requestOptions);
+          }
+        }.bind(this));
+      }
+    });
+  })();
+</script>
