@@ -1,17 +1,40 @@
 {
   "name": "auth-ajax",
+  "version": "0.0.1",
   "description": "iron-ajax with added auth header handling",
+  "authors": [
+    "Simon Green <simon@captaincodeman.com>"
+  ],
   "main": "auth-ajax.html",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/github.com/CaptainCodeman/auth-ajax.git"
+  },
+  "homepage": "http://captaincodeman.github.io/auth-ajax/",
+  "keywords": [
+    "polymer",
+    "web-components",
+    "app",
+    "auth",
+    "ajax",
+    "jwt",
+    "roles",
+    "security",
+    "permissions",
+    "bearer",
+    "authorization",
+    "authentication"
+  ],
   "dependencies": {
     "polymer": "Polymer/polymer#^1.4.0",
     "iron-ajax": "PolymerElements/iron-ajax#^1.4.3",
     "misbehave": "^1.0.2",
-    "polymerfire": "firebase/polymerfire#^0.10.3",
     "jwt-decode": "^2.1.0"
   },
   "devDependencies": {
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
     "iron-demo-helpers": "PolymerElements/iron-demo-helpers#^1.0.0",
+    "polymerfire": "firebase/polymerfire#^0.10.3",
     "web-component-tester": "^4.0.0",
     "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0"
   }
