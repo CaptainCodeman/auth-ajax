@@ -2,32 +2,37 @@
 
 <link rel="import" href="auth-store.html">
 
-<!--
-  auth-role is a custom 'dom-if' implementation that checks authentication status
-  and role membership (from the JWT token). Note any of the role membership checks
-  imply `authenticated`
-
-  User must be anonymous (unauthenticated):
-  <template is="auth-role" anonymous>...</template>
-
-  User must be authenticated:
-  <template is="auth-role" authenticated>...</template>
-
-  User must have admin:
-  <template is="auth-role" role="admin">...</template>
-
-  User must have admin OR operator role:
-  <template is="auth-role" any="['admin', 'operator']">...</template>
-
-  User must have admin AND operator role:
-  <template is="auth-role" all="['admin', 'operator']">...</template>
--->
-
 <script>
   'use strict';
 
   /**
    * Stamps the template if the authentication status matches.
+   *
+   * auth-role is a custom 'dom-if' implementation that checks authentication status
+   * and role membership (from the JWT token). Note any of the role membership checks
+   * imply `authenticated`
+   *
+   * Examples:
+   *
+   * User must be anonymous (unauthenticated):
+   *
+   *     <template is="auth-role" anonymous>...</template>
+   *
+   * User must be authenticated:
+   *
+   *     <template is="auth-role" authenticated>...</template>
+   *
+   * User must have 'admin' role:
+   *
+   *     <template is="auth-role" role="admin">...</template>
+   *
+   * User must have 'admin' OR operator 'role':
+   *
+   *     <template is="auth-role" any="['admin', 'operator']">...</template>
+   *
+   * User must have 'admin' AND 'operator' roles:
+   *
+   *     <template is="auth-role" all="['admin', 'operator']">...</template>
    *
    * When `if` becomes falsey, the stamped content is hidden but not
    * removed from dom. When `if` subsequently becomes truthy again, the content
@@ -37,6 +42,8 @@
    *
    * Set the `restamp` property to true to force the stamped content to be
    * created / destroyed when the `if` condition changes.
+   *
+   * @demo demo/index.html
    */
   Polymer({
     is: 'auth-role',
@@ -134,7 +141,7 @@
       if (authenticated) return true;
 
       if (role.length > 0) {
-        return data.roles.indexOf(role) !== -1;
+        return (data.roles.indexOf(role) !== -1);
       }
 
       if (any.length > 0) {
