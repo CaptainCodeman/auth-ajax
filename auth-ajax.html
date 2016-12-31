@@ -62,7 +62,7 @@ the `auth-store` (via `Polymer.AuthTokenStoreBehavior`).
       // and add our authHandler function call to them
       toRequestOptions: function() {
         var requestOptions = Polymer.AuthAjaxBehavior.toRequestOptions.call(this);
-        requestOptions.authHandler = this._authHandlerBound;
+        requestOptions._authHandler = this._authHandlerBound;
         return requestOptions;
       },
 
