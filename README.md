@@ -2,6 +2,8 @@ _[Demo and API docs](http://captaincodeman.github.io/auth-ajax/)_
 
 ## \<auth-ajax\>
 
+[![Build Status](https://travis-ci.org/CaptainCodeman/auth-ajax.svg?branch=master)](https://travis-ci.org/CaptainCodeman/auth-ajax)
+
 [`<iron-ajax>`](https://beta.webcomponents.org/element/PolymerElements/iron-ajax)
 with added auth header handling, token management and some convenient JWT role checks.
 
