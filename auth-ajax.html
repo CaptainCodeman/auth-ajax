@@ -50,13 +50,12 @@ the `auth-store` (via `Polymer.AuthTokenStoreBehavior`).
         /** Whether an auth token is required to even attempt the request */
         authRequired: {
           type: Boolean,
-          value: false,
-          observer: 'authRequiredChanged'
+          value: false
         }
       },
 
-      authRequiredChanged: function(authRequired) {
-        if(authRequired) this._authHandlerBound = this._authHandler.bind(this);
+      attached: function() {
+        this._authHandlerBound = this._authHandler.bind(this);
       },
 
       // override the iron-ajax method to create options
