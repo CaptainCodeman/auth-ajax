@@ -1,0 +1,186 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../promise-polyfill/promise-polyfill-lite.html">
+
+<script src="../jwt-decode/build/jwt-decode.min.js"></script>
+
+<script>
+  (function() {
+    'use strict';
+
+    var state = {
+      data: null,
+      token: null,
+      refresh: function() {
+        return Promise.reject('no token refresh function set via <auth-store token-refresh="fn" ...>');
+      },
+      promise: null,
+      subscribers: []
+    };
+
+    /**
+     * `Polymer.AuthTokenStoreBehavior` manages access to the JWT auth token
+     *
+     * @polymerBehavior Polymer.AuthTokenStoreBehavior
+     */
+    Polymer.AuthTokenStoreBehavior = {
+      // return a promise to the auth token
+      getAuthToken: function() {
+        if (!state.promise) {
+          state.promise = state.refresh();
+        }
+
+        return state.promise;
+      }
+    };
+
+    /**
+     * `Polymer.AuthTokenReadBehavior` provides read-access to the auth token
+     *
+     * @polymerBehavior Polymer.AuthTokenReadBehavior
+     */
+    Polymer.AuthTokenReadBehavior = {
+      properties: {
+        // decoded JWT token data
+        data: {
+          type: Object,
+          readOnly: true,
+          notify: true,
+          value: function() {
+            return state.data;
+          }
+        }
+      },
+
+      attached: function() {
+        state.subscribers.push(this);
+      },
+
+      detached: function() {
+        var index = state.subscribers.indexOf(this);
+        if (index > -1) {
+          state.subscribers.splice(index, 1);
+        }
+      }
+    };
+
+    /**
+     * `auth-store` enables the app to set the token refresh function
+     *
+     * @demo demo/index.html
+     */
+    Polymer({
+      is: 'auth-store',
+
+      hostAttributes: {
+        hidden: true
+      },
+
+      properties: {
+        // JWT access token
+        token: {
+          type: String,
+          observer: '_tokenChanged'
+        },
+
+        // decoded JWT token data
+        data: {
+          type: Object,
+          readOnly: true,
+          notify: true
+        },
+
+        // token expiry timestamp
+        expiry: {
+          type: Date,
+          readOnly: true,
+          notify: true,
+          computed: '_computeExpiry(data)'
+        },
+
+        // token expiry offset to allow for clock skew
+        offset: {
+          type: Number,
+          value: 300
+        },
+
+        // whether the token is valid
+        isValid: {
+          type: Boolean,
+          readOnly: true,
+          notify: true
+        }
+      },
+
+      observers: [
+        '_expiryChanged(expiry, offset)'
+      ],
+
+      // set the token refresh function
+      setTokenRefresh: function(fn) {
+        state.refresh = this.refreshToken(fn);
+      },
+
+      // refresh the access token
+      refreshToken: function(fn) {
+        return function() {
+          if (this.isValid) {
+            return Promise.resolve(this.token);
+          }
+          return fn().then(function(token) {
+            this.token = token;
+            return token;
+          }.bind(this));
+        }.bind(this);
+      },
+
+      // decodes JWT token data and updates instances
+      _tokenChanged: function(newVal, oldVal) {
+        state.token = this.token;
+        state.data = this.token ? jwt_decode(this.token) : null;
+        this._setData(state.data);
+
+        // notify subscribers
+        for (var i = 0; i < state.subscribers.length; i++) {
+          state.subscribers[i]._setData(state.data);
+        }
+      },
+
+      // compute the token expiry time from the JWT data
+      _computeExpiry: function(data) {
+        if (data === null || typeof data.exp === 'undefined') {
+          return null;
+        }
+        var date = new Date(0);
+        date.setUTCSeconds(data.exp);
+        return date;
+      },
+
+      // set a timeout function to clear the token valid state when expired
+      _expiryChanged: function(expiry, offset) {
+        if (this.timeout) window.clearTimeout(this.timeout);
+        if (expiry === null) return;
+        var countdown = expiry.valueOf() - new Date().valueOf() - (offset * 1000);
+        var seconds = Math.floor(countdown / 1000);
+        var minutes = Math.floor(seconds / 60);
+        seconds -= minutes * 60;
+        console.log('token valid for', minutes + 'm', seconds + 's');
+
+        if (countdown < 0) {
+          this._setIsValid(false);
+          this._tokenExpired();
+        } else {
+          this._setIsValid(true);
+          this.timeout = window.setTimeout(this._tokenExpired.bind(this), countdown);
+        }
+      },
+
+      // clear the token valid flag and reset the promise to force a token refresh
+      // for any future AJAX auth operations
+      _tokenExpired: function() {
+        console.log('token expired');
+        this._setIsValid(false);
+        state.promise = null;
+      }
+    });
+  })();
+</script>

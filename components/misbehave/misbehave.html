@@ -1,0 +1,86 @@
+<link rel="import" href="misbehave-empty.html">
+
+<script>
+(function() {
+
+  var Base = Polymer.Base;
+
+  Base.extend(Base, {
+
+    toBehavior: function() {
+
+      var self = this;
+
+      // An empty component
+      var baseComponent = document.createElement('misbehave-empty');
+
+      var basePrototype = Object.getPrototypeOf(baseComponent);
+      var thisPrototype = Object.getPrototypeOf(this);
+
+      var baseProtoKeys = Object.keys(basePrototype);
+
+      // Filter out junk we don't want in our behavior definition
+      var definitionProtoKeys = Object.keys(thisPrototype).filter(function(prop) {
+
+        // Throw away anything you'd find in every Polymer component
+        var inBase = ~baseProtoKeys.indexOf(prop);
+
+        // Throw away readOnly setters, which should be re-generated organically
+        var readOnlySetter = false;
+
+        var readOnlyMatch = prop.match(/^_set(.*)$/);
+
+        if (readOnlyMatch) {
+
+          // _setMyProperty -> MyProperty -> myProperty
+          var readOnlyProp = readOnlyMatch[1];
+          readOnlyProp = readOnlyProp.substr(0, 1).toLowerCase() + readOnlyProp.substr(1);
+
+          if (self.properties &&
+              self.properties[readOnlyProp] &&
+              self.properties[readOnlyProp].readOnly) {
+
+                readOnlySetter = true;
+          }
+
+        }
+
+        return !inBase && !readOnlySetter;
+      });
+
+      // Build the behavior definition from the culled prototype keys
+      var behaviorDefinition = {};
+
+      var key;
+      for (var i = 0; i < definitionProtoKeys.length; ++i) {
+
+        key = definitionProtoKeys[i];
+
+        // Set properties this way to preserve getters, setters, etc.
+        // One better than `behaviorDefinition[key] = thisPrototype[key]`, but similar
+        Base.copyOwnProperty(key, thisPrototype, behaviorDefinition);
+      }
+
+      // Process to mix in any behaviors of the base component
+      if (behaviorDefinition.behaviors) {
+
+        // Make a shallow clone of the behaviors
+        var subBehaviors = behaviorDefinition.behaviors.concat([]);
+
+        // Remove "behaviors" from the behavior definition
+        delete behaviorDefinition.behaviors;
+
+        // Append the raw definition to the list of behaviors
+        subBehaviors.push(behaviorDefinition);
+
+        // This is our new behavior definition, a list of sub-behaviors
+        behaviorDefinition = subBehaviors;
+      }
+
+      return behaviorDefinition;
+    }
+
+  });
+
+})();
+</script>

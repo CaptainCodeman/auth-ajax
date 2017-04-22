@@ -1,0 +1,38 @@
+{
+  "name": "misbehave",
+  "version": "1.0.2",
+  "keywords": [
+    "web-components",
+    "polymer",
+    "behavior"
+  ],
+  "license": "MIT",
+  "description": "Turn Polymer v1 components into behaviors",
+  "authors": [
+    "Devin Ivy <devin@bigroomstudios.com>"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/devinivy/misbehave.git"
+  },
+  "main": "misbehave.html",
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.0.0"
+  },
+  "devDependencies": {
+    "iron-component-page": "polymerelements/iron-component-page#^1.0.0",
+    "test-fixture": "polymerelements/test-fixture#^1.0.0",
+    "web-component-tester": "*",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.0"
+  },
+  "homepage": "https://github.com/devinivy/misbehave",
+  "_release": "1.0.2",
+  "_resolution": {
+    "type": "version",
+    "tag": "v1.0.2",
+    "commit": "c4408115fccabbf138181b59b0ddd3b7a2f81935"
+  },
+  "_source": "https://github.com/devinivy/misbehave.git",
+  "_target": "^1.0.2",
+  "_originalSource": "misbehave"
+}

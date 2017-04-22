@@ -1,0 +1,163 @@
+<html>
+  <head>
+
+    <title>misbehave tests</title>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+    <script src="../../web-component-tester/browser.js"></script>
+    <script src="../../test-fixture/test-fixture-mocha.js"></script>
+
+    <link rel="import" href="../../test-fixture/test-fixture.html">
+    <link rel="import" href="base-component.html">
+    <link rel="import" href="ext-component.html">
+
+  </head>
+  <body>
+
+    <test-fixture id="base">
+      <template>
+        <base-component></base-component>
+      </template>
+    </test-fixture>
+
+
+    <test-fixture id="ext">
+      <template>
+        <ext-component></ext-component>
+      </template>
+    </test-fixture>
+
+    <script>
+      suite('misbehave', function() {
+
+        var base;
+        var baseBehavior;
+        var baseRawBehavior;
+        var baseDefinition;
+        var ext;
+
+        setup(function() {
+
+          base = fixture('base')
+          baseBehavior = base.toBehavior();
+          baseRawBehavior = Array.isArray(baseBehavior) ? baseBehavior[baseBehavior.length - 1] : baseBehavior;
+          baseDefinition = baseRawBehavior.getBaseDefinition();
+          ext = fixture('ext');
+        });
+
+        test('preserves sub-behaviors.', function(done) {
+
+          // Our behavior definition is a list of behaviors
+          expect(baseBehavior).to.be.an('array');
+          expect(baseBehavior).to.have.length(2);
+
+          // It should consist of the base component's behaviors, plus the raw base behavior
+          expect(baseBehavior).to.deep.equal(baseDefinition.behaviors.concat([ baseRawBehavior ]));
+
+          expect(ext.hasBasicBehavior).to.equal(true);
+
+          done();
+        });
+
+        test('does not create behaviors with anything extraneous.', function(done) {
+
+          expect(baseRawBehavior).to.have.keys([
+            "properties",
+            "observers",
+            "listeners",
+            "ready",
+            "attached",
+            "sayHello",
+            "getter",
+            "setter",
+            "_setterSaw",
+            "_seeEvent",
+            "_baseObserve",
+            "getBaseDefinition"
+          ]);
+
+          done();
+        });
+
+        test('preserves simple properties and methods.', function(done) {
+
+          expect(baseRawBehavior.properties).to.deep.equal(baseDefinition.properties);
+
+          expect(ext.hello).to.equal('Hello');
+          expect(ext.sayHello).to.be.a('function');
+          expect(ext.sayHello()).to.equal('Hello');
+
+          done();
+        });
+
+        test('preserves observers.', function(done) {
+
+          expect(baseRawBehavior.observers).to.deep.equal(baseDefinition.observers);
+
+          expect(ext.observeMe).to.deep.equal({});
+
+          var origObserveMe = ext.observeMe = {
+            hasBeenObserved: false
+          };
+
+          expect(ext.observeMe).to.equal(origObserveMe);
+          expect(ext.observeMe.hasBeenObserved).to.equal(true);
+
+          done();
+        });
+
+        test('preserves listeners.', function(done) {
+
+          expect(baseRawBehavior.listeners).to.deep.equal(baseDefinition.listeners);
+
+          expect(ext.sawEvent).to.equal(false);
+          ext.fire('base-custom-event');
+          expect(ext.sawEvent).to.equal(true);
+
+          done();
+        });
+
+        test('preserves lifecycle callbacks.', function(done) {
+
+          expect(ext.readyCount).to.equal(1);
+          expect(ext.attachedCount).to.equal(1);
+
+          done();
+        });
+
+        test('preserves readOnly setters, allows them to be organically created.', function(done) {
+
+          expect(baseRawBehavior._setReadMeOnly).to.be.undefined;
+          expect(ext._setReadMeOnly).to.be.a('function');
+
+          expect(ext.readMeOnly).to.equal('Protected');
+          ext._setReadMeOnly('Protected Set');
+          expect(ext.readMeOnly).to.equal('Protected Set');
+
+          done();
+        });
+
+        test('preserves getter and setter functions.', function(done) {
+
+          expect(ext.getter).to.equal('Some things never change');
+
+          var change = 'And some things change all the time';
+
+          expect(ext._setterSaw).to.equal(null);
+          ext.setter = change;
+          expect(ext._setterSaw).to.equal(change);
+
+          done();
+        });
+
+      });
+
+    </script>
+
+  </body>
+</html>

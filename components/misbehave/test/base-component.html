@@ -1,0 +1,124 @@
+<link rel="import" href="../../polymer/polymer.html">
+
+<script>
+(function() {
+
+  var BasicBehavior = {
+
+    properties: {
+
+      hasBasicBehavior: {
+        type: Boolean,
+        value: true
+      }
+
+    }
+
+  };
+
+  var BaseDefinition = {
+
+    is: 'base-component',
+
+    behaviors: [
+      BasicBehavior
+    ],
+
+    properties: {
+
+      hello: {
+        type: String,
+        value: 'Hello'
+      },
+
+      readMeOnly: {
+        type: String,
+        value: 'Protected',
+        readOnly: true
+      },
+
+      sawEvent: {
+        type: Boolean,
+        value: false
+      },
+
+      observeMe: {
+        type: Object,
+        value: function() {
+          return {};
+        }
+      },
+
+      readyCount: {
+        type: Number,
+        value: 0
+      },
+
+      attachedCount: {
+        type: Number,
+        value: 0
+      }
+
+    },
+
+    _setterSaw: null,
+
+    observers: [
+      '_baseObserve(observeMe)'
+    ],
+
+    listeners: {
+      'base-custom-event': '_seeEvent'
+    },
+
+    ready: function() {
+
+      // Just to ensure this doesn't appear in the behavior definition
+      this.couldBeExtraneous = true;
+
+      this.readyCount++;
+    },
+
+    attached: function() {
+
+      this.attachedCount++;
+    },
+
+    sayHello: function() {
+
+      return this.hello;
+    },
+
+    get getter() {
+
+      return 'Some things never change';
+    },
+
+    set setter(value) {
+
+      this._setterSaw = value;
+    },
+
+    _seeEvent: function() {
+
+      this.sawEvent = true;
+    },
+
+    _baseObserve: function(observeMe) {
+
+      if (observeMe.hasOwnProperty('hasBeenObserved')) {
+        observeMe.hasBeenObserved = true;
+      }
+    },
+
+    getBaseDefinition: function() {
+
+      return BaseDefinition;
+    }
+
+  };
+
+  Polymer(BaseDefinition);
+
+})();
+</script>
