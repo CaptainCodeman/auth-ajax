@@ -1,6 +1,6 @@
 {
   "name": "auth-ajax",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "iron-ajax with added auth header handling",
   "authors": [
     "Simon Green <simon@captaincodeman.com>"

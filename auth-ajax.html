@@ -54,15 +54,11 @@ the `auth-store` (via `Polymer.AuthTokenStoreBehavior`).
         }
       },
 
-      attached: function() {
-        this._authHandlerBound = this._authHandler.bind(this);
-      },
-
       // override the iron-ajax method to create options
       // and add our authHandler function call to them
       toRequestOptions: function() {
         var requestOptions = Polymer.AuthAjaxBehavior.toRequestOptions.call(this);
-        requestOptions._authHandler = this._authHandlerBound;
+        requestOptions._authHandler = this._authHandler.bind(this);
         return requestOptions;
       },
 

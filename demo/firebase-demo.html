@@ -47,24 +47,25 @@
       <h2>[[jwt.name]]</h2>
       <p><img src$="[[jwt.picture]]"></p>
 
-      <h3>Firebase User</h3>
-      <pre>[[_json(user)]]</pre>
-
-      <h3>Decoded Token</h3>
-      <pre>[[_json(jwt)]]</pre>
-
-      <h3>Authorization Token</h3>
+      <h3>Access Token</h3>
+      <p>The custom access token that can be used to authorize API requests</p>
       <pre>[[token]]</pre>
 
+      <h3>Decoded Token</h3>
+      <p>The decoded access token showing the custom claims (e.g. roles)</p>
+      <pre>[[_json(jwt)]]</pre>
+
       <h3>Expiry</h3>
+      <p>When the token expires</p>
       <p>[[expiry]]</p>
 
       <h3>Data</h3>
-      <pre>[[_json(jwt)]]</pre>
+      <p>Result of an iron-ajax call that requires authorization ("operator" role)<p>
+      <pre>[[_json(data)]]</pre>
 
       <auth-ajax
         auth-required
-        auto="[[user]]"
+        auto="[[token]]"
         url="https://auth-dot-captain-codeman.appspot.com/api"
         last-response="{{data}}">
       </auth-ajax>
