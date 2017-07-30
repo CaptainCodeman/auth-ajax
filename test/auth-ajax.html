@@ -9,17 +9,20 @@
     <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
     <script src="../../web-component-tester/browser.js"></script>
 
-    <link rel="import" href="../auth-ajax.html">
+    <link rel="import" href="../../iron-ajax/iron-ajax.html">
+    <link rel="import" href="../auth-store.html">
   </head>
   <body>
     <test-fixture id="basic">
       <template>
-        <auth-ajax url="/some-endpoint"></auth-ajax>
+        <auth-store></auth-store>
+        <iron-ajax auth url="/some-endpoint"></iron-ajax>
       </template>
     </test-fixture>
 
     <script>
       suite('auth-ajax', function() {
+        var store;
         var ajax;
         var request;
         var server;
@@ -45,13 +48,13 @@
 
         suite('when making a request the auth function is called', function() {
           setup(function() {
-            ajax = fixture('basic');
-            ajax.authToken = function() {
-              return Promise.resolve('my-token');
-            }
+            var basic = fixture('basic');
+            store = basic[0];
+            ajax = basic[1];
+            store.promise = Promise.resolve('my-token');
           });
 
-          test('has sane defaults', function() {
+          test('response', function() {
             request = ajax.generateRequest();
             flush(function() {
               expect(server.requests[0].requestHeaders['authorization']).to.be.equal('Bearer my-token');
@@ -61,11 +64,6 @@
               expect(request.response.success).to.be.equal(true);
             });
           });
-        });
-
-        test('instantiating the element works', function() {
-          var element = fixture('basic');
-          assert.equal(element.is, 'auth-ajax');
         });
       });
     </script>

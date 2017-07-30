@@ -1,7 +1,9 @@
-<link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../polymer/polymer-element.html">
 <link rel="import" href="../../polymerfire/polymerfire.html">
-<link rel="import" href="../auth-ajax.html">
+<link rel="import" href="../../iron-ajax/iron-ajax.html">
+
 <link rel="import" href="../auth-role.html">
+<link rel="import" href="../auth-store.html">
 
 <dom-module id="firebase-demo">
   <template>
@@ -15,6 +17,7 @@
         overflow-wrap: break-word;
       }
     </style>
+
     <firebase-app
         name="captain-codeman"
         api-key="AIzaSyCtTk3qWIdj_kaDTehz0XWYi_C_I0AGchc"
@@ -37,11 +40,12 @@
       token="[[token]]"
       data="{{jwt}}"
       expiry="{{expiry}}"
-      offset="300">
+      offset="300"
+      match="/api">
     </auth-store>
 
-    <button on-tap="signin">Signin</button>
-    <button on-tap="signout">Signout</button>
+    <button on-click="signin">Signin</button>
+    <button on-click="signout">Signout</button>
 
     <template is="dom-if" if="[[jwt]]">
       <h2>[[jwt.name]]</h2>
@@ -63,70 +67,74 @@
       <p>Result of an iron-ajax call that requires authorization ("operator" role)<p>
       <pre>[[_json(data)]]</pre>
 
-      <auth-ajax
-        auth-required
-        auto="[[token]]"
+      <iron-ajax
+        auth
+        auto="[[jwt]]"
         url="https://auth-dot-captain-codeman.appspot.com/api"
         last-response="{{data}}">
-      </auth-ajax>
+      </iron-ajax>
     </template>
 
+    <h3>Role Templates</h3>
     <ul>
-      <template is="auth-role" restamp anonymous><li>Anonymous</li></template>
-      <template is="auth-role" restamp authenticated><li>Authenticated</li></template>
-      <template is="auth-role" restamp role="admin"><li>Admin</li></template>
-      <template is="auth-role" any='["admin", "operator", "Member"]'><li>Admin or Operator or Member</li></template>
-      <template is="auth-role" all='["admin", "operator", "Member"]'><li>Admin and Operator and Member</li></template>
+      <auth-role restamp anonymous><li>Anonymous</li></auth-role>
+      <auth-role restamp authenticated><li>Authenticated</li></auth-role>
+      <auth-role restamp role="admin"><li>Admin</li></auth-role>
+      <auth-role any='["admin", "operator", "Member"]'><li>Admin or Operator or Member</li></auth-role>
+      <auth-role all='["admin", "operator", "Member"]'><li>Admin and Operator and Member</li></auth-role>
     </ul>
   </template>
 
   <script>
-    Polymer({
-      is: 'firebase-demo',
+    class FirebaseDemo extends Polymer.Element {
+      static get is() { return 'firebase-demo' }
 
-      properties: {
-        user: {
-          type: Object,
-          observer: '_userChanged'
-        },
-        token: {
-          type: String,
-        },
-        expiry: {
-          type: Date
+      static get properties() {
+        return {
+          user: {
+            type: Object,
+            observer: '_userChanged'
+          },
+
+          token: {
+            type: String,
+          },
+
+          expiry: {
+            type: Date
+          }
         }
-      },
+      }
 
-      ready: function() {
+      ready() {
+        super.ready()
         this._exchangeTokenBound = this._exchangeToken.bind(this);
         this._signinCustomBound = this._signinCustom.bind(this);
         this.$.store.setTokenRefresh(this._refreshToken.bind(this));
-      },
+      }
 
-      signin: function() {
+      signin() {
         this.$.auth.signInWithPopup();
-      },
+      }
 
-      signout: function() {
+      signout() {
         this.$.auth.signOut();
-      },
+      }
 
-      _refreshToken: function() {
+      _refreshToken() {
         console.log('refreshToken calling getToken');
         return this.user.getToken(true);
-      },
+      }
 
-      _userChanged: function(newVal, oldVal) {
-        console.log('user changed', newVal, this.$.auth.statusKnown);
+      _userChanged(newVal, oldVal) {
         if (this.user === null) {
           this.token = null;
         } else {
-          this.user.getToken(false).then(this._exchangeTokenBound);
+          this.user.getIdToken(false).then(this._exchangeTokenBound);
         }
-      },
+      }
 
-      _exchangeToken: function(token) {
-        console.log('exchange token');
+      _exchangeToken(token) {
         var data = jwt_decode(token);
 
         if (data.firebase.sign_in_provider == 'custom') {
@@ -141,17 +149,17 @@
           .then(function(response) { return response.text(); })
           .then(this._signinCustomBound);
         }
-      },
+      }
 
-      _signinCustom: function(token) {
-        this.$.auth.signOut().then(function() {
-          this.$.auth.signInWithCustomToken(token);
-        }.bind(this));
-      },
+      _signinCustom(token) {
+        this.$.auth.signInWithCustomToken(token);
+      }
 
-      _json: function(val) {
+      _json(val) {
         return JSON.stringify(val, null, '  ');
-      },
-    });
+      }
+    }
+
+    window.customElements.define(FirebaseDemo.is, FirebaseDemo);
   </script>
 </dom-module>

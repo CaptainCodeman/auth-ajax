@@ -1,16 +1,24 @@
-<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../polymer/polymer-element.html">
+<link rel="import" href="../polymer/lib/utils/templatize.html">
+<link rel="import" href="../polymer/lib/utils/debounce.html">
+<link rel="import" href="../polymer/lib/utils/flush.html">
 
 <link rel="import" href="auth-store.html">
 
-<script>
-  'use strict';
+<dom-module id="auth-role">
+  <template>
+    <template is="dom-if" if="[[if]]" restamp="[[restamp]]">
+      <slot></slot>
+    </template>
+  </template>
 
+<script>
+(function() {
+  'use strict';
   /**
-   * Stamps the template if the authentication status matches.
-   *
-   * auth-role is a custom 'dom-if' implementation that checks authentication status
-   * and role membership (from the JWT token). Note any of the role membership checks
-   * imply `authenticated`
+   * `<auth-role>` is a custom 'dom-if' implementation that checks the
+   * authentication status and role membership (from the JWT token).
+   * Note any of the role membership checks imply `authenticated`.
    *
    * Examples:
    *
@@ -33,6 +41,11 @@
    * User must have 'admin' AND 'operator' roles:
    *
    *     <template is="auth-role" all="['admin', 'operator']">...</template>
+
+   * The `<auth-role>` element will stamp a light-dom `<template>` child when
+   * the `if` property becomes truthy, and the template can use Polymer
+   * data-binding and declarative event features when used in the context of
+   * a Polymer element's template.
    *
    * When `if` becomes falsey, the stamped content is hidden but not
    * removed from dom. When `if` subsequently becomes truthy again, the content
@@ -43,97 +56,95 @@
    * Set the `restamp` property to true to force the stamped content to be
    * created / destroyed when the `if` condition changes.
    *
-   * @demo demo/index.html
+   * @customElement
+   * @polymer
+   * @extends Polymer.Element
+   * @summary Custom element that conditionally stamps and hides or removes
+   *   template content based on authentication status and roles.
    */
-  Polymer({
-    is: 'auth-role',
+  class AuthRole extends Polymer.AuthTokenMixin(Polymer.Element) {
+    static get is() { return 'auth-role'; }
 
-    extends: 'template',
+    static get properties() {
+      return {
+        /**
+         * Fired whenever DOM is added or removed/hidden by this template (by
+         * default, rendering occurs lazily).  To force immediate rendering, call
+         * `render`.
+         *
+         * @event dom-change
+         */
 
-    _template: null,
+        /**
+        * When true, this template will stamp if the user is un-authenticated (i.e. anonymous)
+        */
+        anonymous: {
+          type: Boolean,
+          value: false
+        },
 
-    /**
-     * Fired whenever DOM is added or removed/hidden by this template (by
-     * default, rendering occurs lazily).  To force immediate rendering, call
-     * `render`.
-     *
-     * @event dom-change
-     */
+        /**
+        * When true, this template will stamp if the use is authenticated (i.e. signed-in)
+        * but without requiring any specific roles
+        */
+        authenticated: {
+          type: Boolean,
+          value: false
+        },
 
-    properties: {
-      /**
-       * When true, this template will stamp if the user is un-authenticated (i.e. anonymous)
-       */
-      anonymous: {
-        type: Boolean,
-        value: false
-      },
+        /**
+        * A single role that a user needs to have for this template to be stamped.
+        * Implies authenticated.
+        */
+        role: {
+          type: String,
+          value: ''
+        },
 
-      /**
-       * When true, this template will stamp if the use is authenticated (i.e. signed-in)
-       * but without requiring any specific roles
-       */
-      authenticated: {
-        type: Boolean,
-        value: false
-      },
+        /**
+        * List of any roles that the user needs to have for this template to be stamped.
+        * Implies authentication.
+        */
+        any: {
+          type: Array,
+          value: function() {
+            return [];
+          }
+        },
 
-      /**
-       * A single role that a user needs to have for this template to be stamped.
-       * Implies authenticated.
-       */
-      role: {
-        type: String,
-        value: ''
-      },
+        /**
+        * List of all roles that the user needs to have for this template to be stamped.
+        * Implies authentication.
+        */
+        all: {
+          type: Array,
+          value: function() {
+            return [];
+          }
+        },
 
-      /**
-       * List of any roles that the user needs to have for this template to be stamped.
-       * Implies authentication.
-       */
-      any: {
-        type: Array,
-        value: function() {
-          return [];
+        /**
+         * A boolean indicating whether this template should stamp.
+         */
+        if: {
+          type: Boolean,
+          computed: '_computeIf(data, anonymous, authenticated, role, any, all)'
+        },
+
+        /**
+         * When true, elements will be removed from DOM and discarded when `if`
+         * becomes false and re-created and added back to the DOM when `if`
+         * becomes true.  By default, stamped elements will be hidden but left
+         * in the DOM when `if` becomes false, which is generally results
+         * in better performance.
+         */
+        restamp: {
+          type: Boolean,
         }
-      },
-
-      /**
-       * List of all roles that the user needs to have for this template to be stamped.
-       * Implies authentication.
-       */
-      all: {
-        type: Array,
-        value: function() {
-          return [];
-        }
-      },
-
-      'if': {
-        type: Boolean,
-        computed: '_computeIf(data, anonymous, authenticated, role, any, all)',
-        observer: '_queueRender'
-      },
-      /**
-       * When true, elements will be removed from DOM and discarded when `if`
-       * becomes false and re-created and added back to the DOM when `if`
-       * becomes true.  By default, stamped elements will be hidden but left
-       * in the DOM when `if` becomes false, which is generally results
-       * in better performance.
-       */
-      restamp: {
-        type: Boolean,
-        value: false,
-        observer: '_queueRender'
       }
-    },
+    }
 
-    behaviors: [
-      Polymer.Templatizer,
-      Polymer.AuthTokenReadBehavior
-    ],
-
-    _computeIf: function(data, anonymous, authenticated, role, any, all) {
+    _computeIf(data, anonymous, authenticated, role, any, all) {
       if (anonymous && !data) return true;
 
       if (!data) return false;
@@ -168,120 +179,8 @@
       }
 
       return false;
-    },
-
-    _queueRender: function() {
-      this._debounceTemplate(this._render);
-    },
-
-    detached: function() {
-      if (!this.parentNode ||
-          (this.parentNode.nodeType == Node.DOCUMENT_FRAGMENT_NODE &&
-           (!Polymer.Settings.hasShadow ||
-            !(this.parentNode instanceof ShadowRoot)))) {
-        this._teardownInstance();
-      }
-    },
-
-    attached: function() {
-      if (this.if && this.ctor) {
-        // NOTE: ideally should not be async, but node can be attached
-        // when shady dom is in the act of distributing/composing so push it out
-        this.async(this._ensureInstance);
-      }
-    },
-
-    /**
-     * Forces the element to render its content. Normally rendering is
-     * asynchronous to a provoking change. This is done for efficiency so
-     * that multiple changes trigger only a single render. The render method
-     * should be called if, for example, template rendering is required to
-     * validate application state.
-     */
-    render: function() {
-      this._flushTemplates();
-    },
-
-    _render: function() {
-      if (this.if) {
-        if (!this.ctor) {
-          this.templatize(this);
-        }
-        this._ensureInstance();
-        this._showHideChildren();
-      } else if (this.restamp) {
-        this._teardownInstance();
-      }
-      if (!this.restamp && this._instance) {
-        this._showHideChildren();
-      }
-      if (this.if != this._lastIf) {
-        this.fire('dom-change');
-        this._lastIf = this.if;
-      }
-    },
-
-    _ensureInstance: function() {
-      var parentNode = Polymer.dom(this).parentNode;
-      // Guard against element being detached while render was queued
-      if (parentNode) {
-        var parent = Polymer.dom(parentNode);
-        if (!this._instance) {
-          this._instance = this.stamp();
-          var root = this._instance.root;
-          parent.insertBefore(root, this);
-        } else {
-          var c$ = this._instance._children;
-          if (c$ && c$.length) {
-            // Detect case where dom-if was re-attached in new position
-            var lastChild = Polymer.dom(this).previousSibling;
-            if (lastChild !== c$[c$.length-1]) {
-              for (var i=0, n; (i<c$.length) && (n=c$[i]); i++) {
-                parent.insertBefore(n, this);
-              }
-            }
-          }
-        }
-      }
-    },
-
-    _teardownInstance: function() {
-      if (this._instance) {
-        var c$ = this._instance._children;
-        if (c$ && c$.length) {
-          // use first child parent, for case when dom-if may have been detached
-          var parent = Polymer.dom(Polymer.dom(c$[0]).parentNode);
-          for (var i=0, n; (i<c$.length) && (n=c$[i]); i++) {
-            parent.removeChild(n);
-          }
-        }
-        this._instance = null;
-      }
-    },
-
-    _showHideChildren: function() {
-      var hidden = this.__hideTemplateChildren__ || !this.if;
-      if (this._instance) {
-        this._instance._showHideChildren(hidden);
-      }
-    },
-
-    // Implements extension point from Templatizer mixin
-    // Called as side-effect of a host property change, responsible for
-    // notifying parent.<prop> path change on instance
-    _forwardParentProp: function(prop, value) {
-      if (this._instance) {
-        this._instance.__setProperty(prop, value, true);
-      }
-    },
-
-    // Implements extension point from Templatizer
-    // Called as side-effect of a host path change, responsible for
-    // notifying parent.<path> path change on each row
-    _forwardParentPath: function(path, value) {
-      if (this._instance) {
-        this._instance._notifyPath(path, value, true);
-      }
     }
-  });
+  }
+  customElements.define(AuthRole.is, AuthRole);
+})();
 </script>
